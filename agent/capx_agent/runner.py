@@ -38,7 +38,6 @@ def start_server(model_path: str, port: int, gpu_util: float, max_len: int, log_
         "--model", model_path, "--served-model-name", "capx",
         "--host", "127.0.0.1", "--port", str(port),
         "--gpu-memory-utilization", str(gpu_util), "--max-model-len", str(max_len),
-        "--disable-log-requests",
     ]
     log("start server: " + " ".join(cmd))
     f = open(log_path, "w")
@@ -64,7 +63,7 @@ def run_trial(i: int, args: argparse.Namespace, base_tmp: Path) -> dict[str, obj
     tdir = Path(tempfile.mkdtemp(prefix=f"trial{i:03d}-", dir=base_tmp))
     env = {k: v for k, v in os.environ.items() if k in ("PATH", "LANG", "LC_ALL", "MUJOCO_GL", "PYOPENGL_PLATFORM",
                                                         "CAPX_ROBOSUITE_PY", "CAPX_LIBERO_PY", "LIBERO_CONFIG_PATH",
-                                                        "NVIDIA_VISIBLE_DEVICES", "CUDA_VISIBLE_DEVICES")}
+                                                        "NVIDIA_VISIBLE_DEVICES", "CUDA_VISIBLE_DEVICES", "PYTHONPATH")}
     env["NUMBA_CACHE_DIR"] = str(tdir / "numba-cache")
     env.update(HOME=str(tdir), TMPDIR=str(tdir), XDG_CACHE_HOME=str(tdir / ".cache"))
     cmd = [sys.executable, "-m", "capx_agent.trial", "--trial-id", str(i), "--sim", args.sim,

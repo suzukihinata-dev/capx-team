@@ -18,6 +18,7 @@ CaP-X エージェントの本番コンテナ（提出イメージ）を、定�
 
 ## 最初に読むもの
 
+- 全員（と AI エージェント）: [RULE.md](RULE.md) — 守るべき運用ルール。AI エージェントを使うときは必ず読み込ませる
 - メンバー: [docs/member-guide.md](docs/member-guide.md)
 - 環境担当: [docs/env-maintainer.md](docs/env-maintainer.md)
 

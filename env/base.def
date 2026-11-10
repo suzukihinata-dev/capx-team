@@ -35,6 +35,8 @@ From: {{ BASE_IMAGE_REPO }}@{{ BASE_IMAGE_DIGEST }}
     export CAPX_ROBOSUITE_PY=/opt/venvs/robosuite/bin/python
     export CAPX_LIBERO_PY=/opt/venvs/libero/bin/python
     export LIBERO_CONFIG_PATH=/opt/capx/libero_config
+    # イメージは読み取り専用のため、numba のキャッシュは書き込める一時領域に置く（試行ごとに TMPDIR が変わる）
+    export NUMBA_CACHE_DIR="${TMPDIR:-/tmp}/numba-cache"
     export HF_HUB_OFFLINE=1
     export VLLM_NO_USAGE_STATS=1
     export DO_NOT_TRACK=1

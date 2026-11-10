@@ -13,7 +13,7 @@ SKIP_BUILD=""; [[ "${1:-}" == "--skip-build" ]] && SKIP_BUILD=1
 D="$(mktemp -d "${TMPDIR:-/tmp}/capx-dryrun.XXXXXX")"
 echo "dry-run dir: $D"
 pass=0; fail=0
-check() { if eval "$2"; then echo "  PASS: $1"; pass=$((pass+1)); else echo "  FAIL: $1"; fail=$((fail+1)); fi; }
+check() { if (set +o pipefail; eval "$2"); then echo "  PASS: $1"; pass=$((pass+1)); else echo "  FAIL: $1"; fail=$((fail+1)); fi; }
 
 echo "== 1. 模擬の公式リポジトリ"
 OFF="$D/official"; mkdir -p "$OFF/capx_eval/gateway" "$OFF/capx_eval/envclient"

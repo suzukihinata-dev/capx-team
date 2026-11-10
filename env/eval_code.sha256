@@ -1,0 +1,1 @@
+# 評価コード（gateway / EnvClient）の SHA-256 一覧。公式配布後に env/tools/eval_code_hash.py make で作る。

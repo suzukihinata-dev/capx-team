@@ -1,0 +1,14 @@
+# LIBERO 用の仮想環境（/opt/venvs/libero、Python 3.10）。仮版。
+# LIBERO 本体は versions.submission.env の LIBERO_COMMIT を --no-deps で入れる。ここには環境の実行に要る依存だけを書く。
+# ロック: uv pip compile --python-version 3.10 --generate-hashes env/requirements/libero.in -o env/requirements/libero.txt
+robosuite==1.4.0
+mujoco==2.3.7
+bddl==1.0.1
+easydict==1.13
+future==1.0.0
+gym==0.25.2
+numpy==1.26.4
+opencv-python-headless==4.10.0.84
+matplotlib==3.9.2
+cloudpickle==3.0.0
+pyyaml==6.0.2

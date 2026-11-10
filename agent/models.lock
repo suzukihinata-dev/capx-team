@@ -1,0 +1,5 @@
+# 評価時に submission.yaml の weights でマウントするモデル重みの一覧。
+# 1行1モデル: <Hugging Face のリポジトリ> <revision（40桁のコミット SHA）> <コンテナ内の path> [gated]
+# 重み本体は Git にもイメージにも入れない。env/tools/models.py で取得・バインド・submission.yaml 生成を行う。
+# 下の行はスモークテスト用の小さなモデル（Apache-2.0）。本番のモデルは学習・選定の結果で置き換える。
+Qwen/Qwen2.5-0.5B-Instruct 7ae557604adf67be50417f59c2c2f167def9a775 /models/qwen2.5-0.5b-instruct

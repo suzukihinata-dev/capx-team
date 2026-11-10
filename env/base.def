@@ -1,0 +1,99 @@
+Bootstrap: docker
+From: {{ BASE_IMAGE }}@{{ BASE_IMAGE_DIGEST }}
+
+# 基盤イメージ（仮版）。ビルドは env/jobs/build_base.sh から行う（直接 apptainer build しない）。
+# - ベースは digest で固定（タグだけでは中身が変わり得るため）。
+# - 公式リポジトリはビルド前にジョブスクリプトが取得して ctx/official に置く（トークンをビルドに渡さない）。
+# - Python の依存はハッシュ付きロックで固定する。apt は ctx/env/apt.lock があれば版を固定して入れる。
+
+%arguments
+    BASE_IMAGE=nvcr.io/nvidia/vllm:26.05.post1-py3
+    BASE_IMAGE_DIGEST=sha256:a7df7ccf5e772800d4e8e1be1850846d5e65a06cce04d73e8e83f4dd4f7c033b
+    CTX=.
+    BASE_TAG=unknown
+    UV_VERSION=0.13.7
+    ROBOSUITE_PYTHON=3.12
+    LIBERO_PYTHON=3.10
+    LIBERO_REPO=https://github.com/Lifelong-Robot-Learning/LIBERO.git
+    LIBERO_COMMIT=8f1084e3132a39270c3a13ebe37270a43ece2a01
+
+%files
+    {{ CTX }}/env /opt/capx/env
+    {{ CTX }}/official /opt/official
+
+%labels
+    org.capx.image base
+    org.capx.base_tag {{ BASE_TAG }}
+    org.capx.base_image {{ BASE_IMAGE }}@{{ BASE_IMAGE_DIGEST }}
+    org.capx.libero_commit {{ LIBERO_COMMIT }}
+
+%environment
+    export MUJOCO_GL=egl
+    export PYOPENGL_PLATFORM=egl
+    export CAPX_ROBOSUITE_PY=/opt/venvs/robosuite/bin/python
+    export CAPX_LIBERO_PY=/opt/venvs/libero/bin/python
+    export LIBERO_CONFIG_PATH=/opt/capx/libero_config
+    export HF_HUB_OFFLINE=1
+    export VLLM_NO_USAGE_STATS=1
+    export DO_NOT_TRACK=1
+
+%post
+    set -eu
+    export DEBIAN_FRONTEND=noninteractive
+    # --- apt: 描画（EGL）とビルドに要るものだけ ---
+    APT_PKGS="libegl1 libgl1 libglib2.0-0 libgomp1 git ca-certificates"
+    apt-get update -qq
+    if [ -s /opt/capx/env/apt.lock ]; then
+        # 版を固定して入れる（apt.lock は前回のビルド結果から作る。env/tools/make_apt_lock.sh）
+        apt-get install -y -qq --no-install-recommends --allow-downgrades $(grep -v '^#' /opt/capx/env/apt.lock | tr '\n' ' ')
+    else
+        apt-get install -y -qq --no-install-recommends $APT_PKGS
+    fi
+    dpkg-query -W -f='${Package}=${Version}\n' $APT_PKGS > /opt/capx/apt.installed
+    rm -rf /var/lib/apt/lists/*
+
+    # --- uv（版固定） ---
+    python3 -m pip install --no-cache-dir --break-system-packages "uv=={{ UV_VERSION }}" >/dev/null 2>&1 \
+      || python3 -m pip install --no-cache-dir "uv=={{ UV_VERSION }}" >/dev/null
+    export UV_PYTHON_INSTALL_DIR=/opt/uv-python UV_CACHE_DIR=/tmp/uv-cache
+
+    # --- Robosuite 用の仮想環境 ---
+    uv venv -q --python {{ ROBOSUITE_PYTHON }} /opt/venvs/robosuite
+    uv pip install -q --python /opt/venvs/robosuite/bin/python --require-hashes --no-deps -r /opt/capx/env/requirements/robosuite.txt
+
+    # --- LIBERO 用の仮想環境 ---
+    uv venv -q --python {{ LIBERO_PYTHON }} /opt/venvs/libero
+    uv pip install -q --python /opt/venvs/libero/bin/python --require-hashes --no-deps -r /opt/capx/env/requirements/libero.txt
+    git clone -q {{ LIBERO_REPO }} /opt/LIBERO
+    git -C /opt/LIBERO checkout -q {{ LIBERO_COMMIT }}
+    rm -rf /opt/LIBERO/.git
+    uv pip install -q --python /opt/venvs/libero/bin/python --no-deps --no-build-isolation -e /opt/LIBERO || \
+      echo /opt/LIBERO > "$(/opt/venvs/libero/bin/python -c 'import site;print(site.getsitepackages()[0])')/libero.pth"
+    # LIBERO の初回 import で対話的に設定を聞かれるのを避ける
+    mkdir -p /opt/capx/libero_config
+    cat > /opt/capx/libero_config/config.yaml <<EOF
+benchmark_root: /opt/LIBERO/libero/libero
+bddl_files: /opt/LIBERO/libero/libero/bddl_files
+init_states: /opt/LIBERO/libero/libero/init_files
+datasets: /opt/LIBERO/libero/datasets
+assets: /opt/LIBERO/libero/libero/assets
+EOF
+
+    # --- 公式リポジトリ（公式配布後。ctx/official が空なら何もしない） ---
+    if [ -n "$(ls -A /opt/official 2>/dev/null)" ]; then
+        echo "official code present: $(cat /opt/official/.capx_commit 2>/dev/null || echo unknown)"
+    fi
+
+    # --- 版の記録（%labels と別に、中身の一覧を残す） ---
+    {
+      echo "base_tag={{ BASE_TAG }}"
+      echo "base_image={{ BASE_IMAGE }}@{{ BASE_IMAGE_DIGEST }}"
+      python3 -c 'import torch,vllm,sys;print("python="+sys.version.split()[0]);print("torch="+torch.__version__);print("torch_cuda="+str(torch.version.cuda));print("vllm="+vllm.__version__)' 2>/dev/null || true
+      echo "--- robosuite venv"; uv pip freeze --python /opt/venvs/robosuite/bin/python
+      echo "--- libero venv";    uv pip freeze --python /opt/venvs/libero/bin/python
+    } > /opt/capx/versions.installed
+    rm -rf /tmp/uv-cache /root/.cache
+
+%test
+    /opt/venvs/robosuite/bin/python -c 'import robosuite'
+    /opt/venvs/libero/bin/python -c 'import libero.libero'

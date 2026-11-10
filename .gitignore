@@ -1,0 +1,14 @@
+# イメージ・重み・作業データはリポジトリに入れない（.gitignore だけに頼らず、軽量検査でも確認する）
+*.sif
+*.safetensors
+*.bin
+*.pt
+*.pth
+*.ckpt
+*.gguf
+records/
+build/
+.venv/
+__pycache__/
+.pytest_cache/
+.DS_Store

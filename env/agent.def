@@ -1,0 +1,37 @@
+Bootstrap: localimage
+From: {{ BASE_SIF }}
+
+# 提出イメージ。ビルドは env/jobs/build_agent.sh から行う（直接 apptainer build しない）。
+# - モデル重みは入れない。評価時は submission.yaml の weights で /models/<名前> に読み取り専用でマウントされる。
+# - 出自（元コミット・基盤タグ・models.lock のハッシュ）を %labels に埋め込む。
+
+%arguments
+    BASE_SIF=base.sif
+    CTX=.
+    SOURCE_COMMIT=unknown
+    BASE_TAG=unknown
+    MODELS_LOCK_SHA256=unknown
+    JOB_PROTOCOL_VERSION=0
+
+%files
+    {{ CTX }}/agent /opt/capx/agent
+
+%labels
+    org.capx.image agent
+    org.capx.source_commit {{ SOURCE_COMMIT }}
+    org.capx.base_tag {{ BASE_TAG }}
+    org.capx.models_lock_sha256 {{ MODELS_LOCK_SHA256 }}
+    org.capx.job_protocol_version {{ JOB_PROTOCOL_VERSION }}
+
+%post
+    set -eu
+    export UV_CACHE_DIR=/tmp/uv-cache UV_PYTHON_DOWNLOADS=never
+    cd /opt/capx/agent
+    UV_PROJECT_ENVIRONMENT=/opt/venvs/agent uv sync -q --frozen --no-dev --no-editable --python /usr/bin/python3
+    rm -rf /tmp/uv-cache /root/.cache /opt/capx/agent/.venv
+
+%runscript
+    exec /opt/venvs/agent/bin/python -m capx_agent.runner "$@"
+
+%test
+    /opt/venvs/agent/bin/python -c 'import capx_agent.runner'

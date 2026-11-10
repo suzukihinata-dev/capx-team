@@ -1,0 +1,4 @@
+# Robosuite 用の仮想環境（/opt/venvs/robosuite、Python 3.12）。仮版。
+# ロック: uv pip compile --python-version 3.12 --generate-hashes env/requirements/robosuite.in -o env/requirements/robosuite.txt
+robosuite==1.5.2
+mujoco==3.3.7

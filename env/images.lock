@@ -1,2 +1,3 @@
 # 基盤イメージのビルド結果（build_base.sh の出力を PR で追加する。入力の版は versions.submission.env）
 # <tag> <base.sif の SHA-256> <サイズ(byte)> <ビルド元の env/ のコミット>
+base-20261110.2 36129dd4b8667e173edbdeabd14e3db6ab2e1a7af29d99db9ec2a991583d18c7 9335984128 fea4bce938f41d55a123248905bf4c86a83984a2

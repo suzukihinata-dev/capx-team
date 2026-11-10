@@ -33,3 +33,33 @@
 
 - `sudo bash env/install-host.sh`（2回目以降は何も変わらないこと）、確認だけなら `bash env/install-host.sh --check`。
 - ドライバは入れ替えない。docker・lxd・libvirt のグループに班長以外を入れない。
+
+## Slack 通知の文面雛形
+
+基盤イメージを配置したとき（Agent 班チャンネル）:
+
+```
+【基盤イメージ更新】base-YYYYMMDD.N を配置しました
+- 元コミット: <env/ のコミット 12 桁>（env/images.lock に記録済み）
+- 変更点: <公式配布への追従 / 依存の追加 など1〜2行>
+- 置き場所: $CAPX_DATA/images/base-YYYYMMDD.N.sif
+- 影響: 開発モードは次回から新しいイメージを使ってください。統合ビルドは images.lock の最後の行を自動で使います。
+```
+
+提出候補を作ったとき:
+
+```
+【提出候補】sub-YYYYMMDD.N
+- 元コミット: <12 桁> / 基盤: base-YYYYMMDD.N
+- 統合ビルドとスモークテスト: 合格（実行記録: records/<コミット>/<ジョブID>-…）
+- 重み: <models.lock の要約>
+- 提出判断はリーダーが行います。
+```
+
+通知文には参加者限定の情報・トークン・メンバーのアカウント名を書かない。
+
+## 班長の Mac からの接続（E-08）
+
+- Mac から Linux PC へは Tailscale の名前で ssh する（`ssh suzukihinata-dev@suzukihinata-gpu`）。
+- ファイルの同期は git を基本にする。Mac で作業したら GitHub と Linux PC のベアリポジトリ（`~/capx/capx-team.git`）に push し、Linux PC の作業用 clone で pull する。
+- GMO へは Mac から班長の鍵で接続する（Linux PC からの GMO 接続は保留中）。

@@ -24,7 +24,7 @@ grep -Eq '^BASE_IMAGE_DIGEST=sha256:[0-9a-f]{64}$' env/versions.submission.env &
 
 step "4. 手順の版番号"
 grep -Eq '^JOB_PROTOCOL_VERSION=[0-9]+$' env/versions.submission.env && ok JOB_PROTOCOL_VERSION || ng JOB_PROTOCOL_VERSION
-base="$(git merge-base HEAD origin/main 2>/dev/null || true)"
+base="$(git merge-base HEAD origin/develop 2>/dev/null || git merge-base HEAD origin/main 2>/dev/null || true)"  # Gitflow: PR の向き先は develop
 if [[ -n "$base" ]] && ! git diff --quiet "$base" -- env/jobs/; then
   git diff "$base" -- env/versions.submission.env | grep -q '^+JOB_PROTOCOL_VERSION=' \
     && ok "env/jobs/ の変更に合わせて版番号を上げた" || ng "env/jobs/ を変えたのに JOB_PROTOCOL_VERSION を上げていない"
@@ -36,8 +36,16 @@ if git grep -IEn "$PAT" -- . ':!env/tools/*' >/dev/null; then ng "トークン�
 big="$(git ls-files -z | xargs -0 -I{} sh -c 'test $(stat -c %s "{}" 2>/dev/null || stat -f %z "{}") -gt 5000000 && echo "{}"' || true)"
 [[ -z "$big" ]] && ok "5MB を超えるファイルなし" || ng "大きなファイル: $big"
 git ls-files | grep -Eiq '\.(sif|safetensors|bin|pt|pth|ckpt|gguf)$' && ng "イメージ・重みのファイルがリポジトリにある" || ok "イメージ・重みのファイルなし"
-bad_mail="$(git log --format='%ae%n%ce' | sort -u | grep -v 'users.noreply.github.com$' || true)"
-[[ -z "$bad_mail" ]] && ok "コミットのメールは非公開アドレスのみ" || ng "非公開アドレス以外のメール: $bad_mail"
+# GitHub の画面でマージしたときのコミッター（noreply@github.com）は許可する。
+# この PR で新しく足すコミットは NG、既に develop にある過去のコミットは警告（移行前に作者情報を直す。要件定義書 §4.3）。
+mailfilter() { sort -u | grep -v -e 'users.noreply.github.com$' -e '^noreply@github.com$' || true; }
+range=""; [[ -n "$base" ]] && range="$base..HEAD"
+new_bad="$(git log --format='%ae%n%ce' $range | mailfilter)"
+[[ -z "$new_bad" ]] && ok "新しいコミットのメールは非公開アドレスのみ" || ng "新しいコミットに非公開アドレス以外のメールがある（件数: $(wc -l <<<"$new_bad" | tr -d ' ')）"
+if [[ -n "$base" ]]; then
+  old_bad="$(git log --format='%ae%n%ce' "$base" | mailfilter)"
+  [[ -z "$old_bad" ]] || echo "  WARN: 既存の履歴に非公開アドレス以外のメールがある（件数: $(wc -l <<<"$old_bad" | tr -d ' ')）。正式リポジトリへ移す前に作者情報を直す"
+fi
 
 echo
 [[ $FAIL -eq 0 ]] && echo "軽量検査: 合格" || echo "軽量検査: 不合格"

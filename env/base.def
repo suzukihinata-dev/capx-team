@@ -1,13 +1,15 @@
 Bootstrap: docker
-From: {{ BASE_IMAGE }}@{{ BASE_IMAGE_DIGEST }}
+From: {{ BASE_IMAGE_REPO }}@{{ BASE_IMAGE_DIGEST }}
 
 # 基盤イメージ（仮版）。ビルドは env/jobs/build_base.sh から行う（直接 apptainer build しない）。
-# - ベースは digest で固定（タグだけでは中身が変わり得るため）。
+# - ベースは digest で固定（タグだけでは中身が変わり得るため）。Apptainer はタグと digest の併記を受け付けないので、
+#   From にはタグを外したリポジトリ名＋digest を使い、タグは記録（%labels）にだけ残す。
 # - 公式リポジトリはビルド前にジョブスクリプトが取得して ctx/official に置く（トークンをビルドに渡さない）。
 # - Python の依存はハッシュ付きロックで固定する。apt は ctx/env/apt.lock があれば版を固定して入れる。
 
 %arguments
     BASE_IMAGE=nvcr.io/nvidia/vllm:26.05.post1-py3
+    BASE_IMAGE_REPO=nvcr.io/nvidia/vllm
     BASE_IMAGE_DIGEST=sha256:a7df7ccf5e772800d4e8e1be1850846d5e65a06cce04d73e8e83f4dd4f7c033b
     CTX=.
     BASE_TAG=unknown

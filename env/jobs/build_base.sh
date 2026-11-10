@@ -41,7 +41,7 @@ mkdir -p "$OUT"
 SIF="$OUT/$TAG.sif"
 [[ -e "$SIF" ]] && die "既に存在します（上書きしない）: $SIF"
 BUILD_ARGS=(--build-arg "CTX=$CTX" --build-arg "BASE_TAG=$TAG"
-  --build-arg "BASE_IMAGE=$BASE_IMAGE" --build-arg "BASE_IMAGE_DIGEST=$BASE_IMAGE_DIGEST"
+  --build-arg "BASE_IMAGE=$BASE_IMAGE" --build-arg "BASE_IMAGE_REPO=${BASE_IMAGE%:*}" --build-arg "BASE_IMAGE_DIGEST=$BASE_IMAGE_DIGEST"
   --build-arg "UV_VERSION=$UV_VERSION" --build-arg "ROBOSUITE_PYTHON=$ROBOSUITE_PYTHON"
   --build-arg "LIBERO_PYTHON=$LIBERO_PYTHON" --build-arg "LIBERO_REPO=$LIBERO_REPO"
   --build-arg "LIBERO_COMMIT=$LIBERO_COMMIT")

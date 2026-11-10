@@ -14,6 +14,9 @@ CAPX_TOKEN_DIR="${CAPX_TOKEN_DIR:-$HOME/.config/capx}"
 JOB_ID="${SLURM_JOB_ID:-local$$}"
 STAMP="$(date -u +%Y%m%dT%H%M%SZ)"
 APPTAINER="${APPTAINER:-apptainer}"
+# ビルドの作業領域。/tmp は nodev 等でビルドに失敗することがあるため、データ領域の下を使う。
+export APPTAINER_TMPDIR="${APPTAINER_TMPDIR:-$CAPX_DATA/tmp}"
+mkdir -p "$APPTAINER_TMPDIR"
 
 die()  { echo "ERROR: $*" >&2; exit 1; }
 note() { echo "[$(date -u +%H:%M:%S)] $*" >&2; }

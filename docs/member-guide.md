@@ -21,7 +21,7 @@
 - main からブランチを切る。
 - 基盤イメージに自分のコードを差し込んで動かす（再ビルド不要）:
   ```bash
-  BASE=$CAPX_DATA/images/base-<tag>.sif          # 最新のタグは env/images.lock の最後の行
+  BASE=$CAPX_DATA/images/<tag>.sif               # <tag> は env/images.lock の最後の行（base-YYYYMMDD.N）
   apptainer exec --nv --bind $PWD/agent:/opt/capx/agent $BASE \
     sh -c 'cd /opt/capx/agent && UV_PROJECT_ENVIRONMENT=$HOME/.capx-venv uv sync -q --frozen && $HOME/.capx-venv/bin/python -m capx_agent.runner --no-server'
   ```

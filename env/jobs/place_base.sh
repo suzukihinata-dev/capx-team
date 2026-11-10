@@ -10,12 +10,12 @@ while [[ $# -gt 0 ]]; do case "$1" in
   --sif) SIF="$2"; shift 2;; --lock) LOCK="$2"; shift 2;; --images-dir) IMAGES="$2"; shift 2;;
   *) die "不明な引数: $1";; esac; done
 [[ -f "$SIF" && -f "$LOCK" ]] || die "--sif と --lock を指定してください"
-TAG="$(basename "$SIF" .sif)"; TAG="${TAG#base-}"
+TAG="$(basename "$SIF" .sif)"
 line="$(grep -E "^$TAG " "$LOCK" || true)"; [[ -n "$line" ]] || die "images.lock に $TAG がありません（PR のマージ前に配置しない）"
 read -r _ want_sha want_size _ <<<"$line"
 [[ "$(stat -c %s "$SIF")" == "$want_size" ]] || die "サイズが images.lock と一致しません"
 [[ "$(sha256sum "$SIF" | cut -d' ' -f1)" == "$want_sha" ]] || die "SHA-256 が images.lock と一致しません"
-mkdir -p "$IMAGES"; dest="$IMAGES/base-$TAG.sif"
+mkdir -p "$IMAGES"; dest="$IMAGES/$TAG.sif"
 [[ -e "$dest" ]] && die "既に配置済み: $dest"
 cp "$SIF" "$dest.partial" && chmod a-w "$dest.partial" && mv "$dest.partial" "$dest"
 note "配置しました: $dest（Slack の Agent 班チャンネルへ通知してください）"

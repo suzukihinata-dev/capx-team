@@ -4,7 +4,7 @@
 #SBATCH --time=04:00:00
 # 基盤イメージ（base.sif）を指定コミットの定義からビルドする（環境担当が実行）。
 #   build_base.sh --commit <sha|tag> --tag base-YYYYMMDD.N [--source-dir DIR] [--out DIR]
-# 出力: <out>/base-<tag>.sif と、env/images.lock に追記する行（ここでは書き込まない。PR で反映する）。
+# 出力: <out>/<tag>.sif と、env/images.lock に追記する行（ここでは書き込まない。PR で反映する）。
 # 配置（グループ領域の images/ へ）は images.lock の PR がマージされた後に place_base.sh で行う。
 set -euo pipefail
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -38,7 +38,7 @@ if [[ -n "${OFFICIAL_REPO_URL:-}" ]]; then
 fi
 
 mkdir -p "$OUT"
-SIF="$OUT/base-$TAG.sif"
+SIF="$OUT/$TAG.sif"
 [[ -e "$SIF" ]] && die "既に存在します（上書きしない）: $SIF"
 BUILD_ARGS=(--build-arg "CTX=$CTX" --build-arg "BASE_TAG=$TAG"
   --build-arg "BASE_IMAGE=$BASE_IMAGE" --build-arg "BASE_IMAGE_DIGEST=$BASE_IMAGE_DIGEST"

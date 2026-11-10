@@ -11,7 +11,7 @@
    - `env/jobs/` を変えたら `JOB_PROTOCOL_VERSION` を上げ、自動化用の固定スクリプトも同じ日に更新する。
 2. マージ後、そのコミットでビルド: `bash env/jobs/build_base.sh --commit <sha> --tag base-YYYYMMDD.N`
 3. 出力された1行を `env/images.lock` に追加する PR → マージ。
-4. マージ後に配置: `bash env/jobs/place_base.sh --sif <build/base-….sif> --lock env/images.lock`
+4. マージ後に配置: `bash env/jobs/place_base.sh --sif <build/base-YYYYMMDD.N.sif> --lock env/images.lock`
 5. Slack の Agent 班チャンネルへ通知（タグと変更点）。
 6. apt の版を固定する場合: `bash env/tools/make_apt_lock.sh <base.sif> > env/apt.lock` を PR。
 

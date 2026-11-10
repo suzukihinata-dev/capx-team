@@ -14,7 +14,7 @@ if command -v shellcheck >/dev/null; then shellcheck -S warning env/*.sh env/job
 
 step "2. Python の構文と単体テスト"
 python3 -m py_compile env/tools/*.py env/smoke/*.py agent/capx_agent/*.py && ok py_compile || ng py_compile
-(cd agent && python3 -m unittest -q discover -s tests 2>&1 | tail -1) | grep -q '^OK' && ok unittest || ng unittest
+(cd agent && python3 -m unittest -q discover -s tests -t . 2>&1 | tail -1) | grep -q '^OK' && ok unittest || ng unittest
 
 step "3. ロックファイル"
 python3 env/tools/models.py check --lock agent/models.lock >/dev/null && ok models.lock || ng models.lock

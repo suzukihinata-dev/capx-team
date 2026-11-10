@@ -10,7 +10,9 @@
 set -euo pipefail
 ROOT="$(git -C "$(dirname "${BASH_SOURCE[0]}")" rev-parse --show-toplevel)"
 SKIP_BUILD=""; [[ "${1:-}" == "--skip-build" ]] && SKIP_BUILD=1
-D="$(mktemp -d "${TMPDIR:-/tmp}/capx-dryrun.XXXXXX")"
+# 作業はデータ領域の下で行う（/tmp は容量制限でビルドに失敗することがあるため）
+mkdir -p "${CAPX_DATA:-$HOME/capx-data}/dryrun"
+D="$(mktemp -d "${CAPX_DATA:-$HOME/capx-data}/dryrun/run.XXXXXX")"
 echo "dry-run dir: $D"
 pass=0; fail=0
 check() { if (set +o pipefail; eval "$2"); then echo "  PASS: $1"; pass=$((pass+1)); else echo "  FAIL: $1"; fail=$((fail+1)); fi; }

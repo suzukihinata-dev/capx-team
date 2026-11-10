@@ -5,7 +5,17 @@ import hashlib
 from dataclasses import dataclass
 from pathlib import Path
 
-DEFAULT_LOCK = Path(__file__).resolve().parent.parent / "models.lock"
+def _default_lock() -> Path:
+    """models.lock の場所: 環境変数 CAPX_MODELS_LOCK、イメージ内の /opt/capx/agent、リポジトリの agent/ の順に探す。"""
+    import os
+    for cand in (os.environ.get("CAPX_MODELS_LOCK"), "/opt/capx/agent/models.lock",
+                 str(Path(__file__).resolve().parent.parent / "models.lock")):
+        if cand and Path(cand).is_file():
+            return Path(cand)
+    return Path("/opt/capx/agent/models.lock")
+
+
+DEFAULT_LOCK = _default_lock()
 
 
 @dataclass(frozen=True)

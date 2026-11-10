@@ -7,7 +7,8 @@
   pyproject.toml / uv.lock / requirements*.txt / environment.yml / *.def / Dockerfile*
 こちら側:
   env/versions.submission.env と env/requirements/*.txt（ロック済みの版）
-出力: 項目・本環境の版・公式の版・判定（一致／不一致／公式のみ／本環境のみ）の表。
+出力: 項目・本環境の版・公式の版・判定（一致／条件を満たす／一部の環境のみ一致／不一致／公式のみ／本環境のみ）の表。
+こちらの pip の版は仮想環境（ロックファイル）ごとに表示する。
 存在しない形式は読み飛ばし、その旨を出力する。終了コードは不一致・公式のみがあれば 1。
 """
 from __future__ import annotations
@@ -91,21 +92,39 @@ def official_items(root: Path, log: list[str]) -> dict[str, tuple[str, str]]:
     return items
 
 
-def our_items(ours: Path) -> dict[str, str]:
-    items: dict[str, str] = {}
+def our_items(ours: Path) -> dict[str, dict[str, str]]:
+    """こちらの版。pip のパッケージは仮想環境（ロックファイル）ごとに持つ: {項目: {環境名: 版}}"""
+    items: dict[str, dict[str, str]] = {}
     env = {}
     for ln in (ours / "env/versions.submission.env").read_text().splitlines():
         if "=" in ln and not ln.lstrip().startswith("#"):
             k, v = ln.split("=", 1)
             env[k.strip()] = v.strip()
     if env.get("BASE_IMAGE"):
-        items["base_image"] = env["BASE_IMAGE"]
-    if env.get("ROBOSUITE_PYTHON"):
-        items["python"] = env["ROBOSUITE_PYTHON"]
+        items["base_image"] = {"base": env["BASE_IMAGE"]}
+    for key, name in (("ROBOSUITE_PYTHON", "robosuite"), ("LIBERO_PYTHON", "libero")):
+        if env.get(key):
+            items.setdefault("python", {})[name] = env[key]
     for f in sorted((ours / "env/requirements").glob("*.txt")):
         for k, v in parse_req_lines(f.read_text().splitlines()).items():
-            items.setdefault(f"pip:{k}", v)
+            items.setdefault(f"pip:{k}", {})[f.stem] = v
     return items
+
+
+def vtuple(v: str) -> tuple[int, ...]:
+    return tuple(int(x) for x in re.findall(r"\d+", v)[:4])
+
+
+def satisfies(version: str, spec: str) -> bool | None:
+    """spec（例: '>=1.10'、'1.2.3'）を version が満たすか。判定できなければ None。"""
+    m = re.match(r"^(==|>=|<=|~=|>|<|=)?\s*(.+)$", spec.strip())
+    if not m or not re.search(r"\d", m.group(2)) or not re.search(r"\d", version):
+        return None
+    op, want = m.group(1) or "==", m.group(2)
+    a, b = vtuple(version), vtuple(want)
+    if op in ("==", "="):
+        return version.strip("=") == want or a == b
+    return {">=": a >= b, "<=": a <= b, ">": a > b, "<": a < b, "~=": a >= b and a[:len(b) - 1] == b[:len(b) - 1]}[op]
 
 
 def main() -> int:
@@ -120,9 +139,19 @@ def main() -> int:
     rows = []
     for k in sorted(set(off) | set(our)):
         o = off.get(k, ("", ""))[0]
-        u = our.get(k, "")
-        if k in off and k in our:
-            j = "一致" if o.lstrip("=") == u.lstrip("=") else "不一致"
+        mine = our.get(k, {})
+        u = " / ".join(f"{v} ({e})" if len(mine) > 1 else v for e, v in mine.items())
+        if k in off and mine:
+            if k == "base_image":
+                ok = [o == v for v in mine.values()]
+            else:
+                ok = [satisfies(v, o) for v in mine.values()]
+            if all(x is True for x in ok):
+                j = "一致" if not re.match(r"^(>=|<=|~=|>|<)", o) else "条件を満たす"
+            elif any(x is True for x in ok):
+                j = "一部の環境のみ一致"
+            else:
+                j = "不一致"
         elif k in off:
             j = "公式のみ"
         else:
@@ -137,9 +166,9 @@ def main() -> int:
             print("\t".join(r))
     for m in log:
         print(f"# {m}", file=sys.stderr)
-    counts = {j: sum(1 for r in rows if r[3] == j) for j in ("一致", "不一致", "公式のみ", "本環境のみ")}
+    counts = {j: sum(1 for r in rows if r[3] == j) for j in ("一致", "条件を満たす", "一部の環境のみ一致", "不一致", "公式のみ", "本環境のみ")}
     print("# " + " ".join(f"{k}={v}" for k, v in counts.items()), file=sys.stderr)
-    return 1 if counts["不一致"] or counts["公式のみ"] else 0
+    return 1 if counts["不一致"] or counts["公式のみ"] or counts["一部の環境のみ一致"] else 0
 
 
 if __name__ == "__main__":

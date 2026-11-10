@@ -18,7 +18,7 @@
 
 ## 1. 開発（開発モード）
 
-- main からブランチを切る。
+- `develop` から `feature/<内容>` を切る（ブランチ運用は [README](../README.md) の Gitflow）。
 - 基盤イメージに自分のコードを差し込んで動かす（再ビルド不要）:
   ```bash
   BASE=$CAPX_DATA/images/<tag>.sif               # <tag> は env/images.lock の最後の行（base-YYYYMMDD.N）
@@ -41,13 +41,13 @@
 ## 4. PR
 
 1. `bash env/tools/lightweight_checks.sh`（CI が整うまでは手元で実行し、結果を PR に貼る）
-2. レビューを受けて main にマージ
+2. レビューを受けて `develop` にマージ
 
 ## 5. 統合ビルド（誰でも実行できる）
 
 - 手元で編集したスクリプトではなく、**指定コミットの `env/jobs/`** を使う（スクリプト自身が一致を確かめ、違えば止まる）。
   ```bash
-  git -C <作業ディレクトリ> checkout <main のコミット>
+  git -C <作業ディレクトリ> checkout <検査対象のコミット>（提出候補の検査では `release/*` の先頭、日常の確認では `develop` の先頭）
   CAPX_REPO_URL=https://github.com/<org>/<repo>.git CAPX_OPERATOR=<担当記号> \
     sbatch env/jobs/integration_build.sh --commit <コミット>
   # ローカル PC では sbatch の代わりに bash

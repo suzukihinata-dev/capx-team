@@ -32,8 +32,9 @@ From: {{ BASE_IMAGE_REPO }}@{{ BASE_IMAGE_DIGEST }}
 %environment
     export MUJOCO_GL=egl
     export PYOPENGL_PLATFORM=egl
-    export CAPX_ROBOSUITE_PY=/opt/venvs/robosuite/bin/python
-    export CAPX_LIBERO_PY=/opt/venvs/libero/bin/python
+    # シミュレータ用の Python は、ベースの LD_LIBRARY_PATH・PYTHONPATH（Python 3.12 の torch 等）を外して起動する
+    export CAPX_ROBOSUITE_PY=/opt/capx/bin/robosuite-python
+    export CAPX_LIBERO_PY=/opt/capx/bin/libero-python
     export LIBERO_CONFIG_PATH=/opt/capx/libero_config
     # イメージは読み取り専用のため、numba のキャッシュは書き込める一時領域に置く（試行ごとに TMPDIR が変わる）
     export NUMBA_CACHE_DIR="${TMPDIR:-/tmp}/numba-cache"
@@ -67,12 +68,18 @@ From: {{ BASE_IMAGE_REPO }}@{{ BASE_IMAGE_DIGEST }}
 
     # --- LIBERO 用の仮想環境 ---
     uv venv -q --python {{ LIBERO_PYTHON }} /opt/venvs/libero
-    uv pip install -q --python /opt/venvs/libero/bin/python --require-hashes --no-deps -r /opt/capx/env/requirements/libero.txt
+    uv pip install -q --python /opt/venvs/libero/bin/python --require-hashes --no-deps --index-strategy unsafe-best-match -r /opt/capx/env/requirements/libero.txt
     git clone -q {{ LIBERO_REPO }} /opt/LIBERO
     git -C /opt/LIBERO checkout -q {{ LIBERO_COMMIT }}
     rm -rf /opt/LIBERO/.git
-    uv pip install -q --python /opt/venvs/libero/bin/python --no-deps --no-build-isolation -e /opt/LIBERO || \
-      echo /opt/LIBERO > "$(/opt/venvs/libero/bin/python -c 'import site;print(site.getsitepackages()[0])')/libero.pth"
+    echo /opt/LIBERO > /opt/venvs/libero/lib/python{{ LIBERO_PYTHON }}/site-packages/libero.pth
+
+    # --- シミュレータ用 Python の起動ラッパー ---
+    mkdir -p /opt/capx/bin
+    for v in robosuite libero; do
+      printf '#!/bin/sh\nunset PYTHONPATH\nexport LD_LIBRARY_PATH=/.singularity.d/libs:/usr/local/nvidia/lib64\nexec /opt/venvs/%s/bin/python "$@"\n' "$v" > /opt/capx/bin/$v-python
+      chmod 755 /opt/capx/bin/$v-python
+    done
     # LIBERO の初回 import で対話的に設定を聞かれるのを避ける
     mkdir -p /opt/capx/libero_config
     cat > /opt/capx/libero_config/config.yaml <<EOF
@@ -99,5 +106,7 @@ EOF
     rm -rf /tmp/uv-cache /root/.cache
 
 %test
-    /opt/venvs/robosuite/bin/python -c 'import robosuite'
-    /opt/venvs/libero/bin/python -c 'import libero.libero'
+    set -e
+    /opt/capx/bin/robosuite-python -c 'import robosuite, robosuite.utils.transform_utils; print("robosuite", robosuite.__version__)' > /tmp/rs.log 2>&1 || { cat /tmp/rs.log; exit 1; }
+    if grep -q 'cannot cache function' /tmp/rs.log; then cat /tmp/rs.log; exit 1; fi
+    /opt/capx/bin/libero-python -c 'import torch, termcolor, libero.libero.benchmark; print("libero ok")'

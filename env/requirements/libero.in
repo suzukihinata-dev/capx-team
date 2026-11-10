@@ -1,6 +1,11 @@
 # LIBERO 用の仮想環境（/opt/venvs/libero、Python 3.10）。仮版。
 # LIBERO 本体は versions.submission.env の LIBERO_COMMIT を --no-deps で入れる。ここには環境の実行に要る依存だけを書く。
-# ロック: uv pip compile --python-version 3.10 --generate-hashes env/requirements/libero.in -o env/requirements/libero.txt
+# ロック: uv pip compile --python-version 3.10 --python-platform x86_64-manylinux_2_28 --generate-hashes --emit-index-url --index-strategy unsafe-best-match env/requirements/libero.in -o env/requirements/libero.txt
+# torch は LIBERO が初期状態ファイルの読み込みに使うだけなので CPU 版を使う。
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch==2.5.1+cpu
+# robosuite 1.4.0 のパッケージ情報に無いが実行に要る依存
+termcolor==2.5.0
 robosuite==1.4.0
 mujoco==2.3.7
 bddl==1.0.1

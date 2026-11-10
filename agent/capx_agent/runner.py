@@ -65,6 +65,7 @@ def run_trial(i: int, args: argparse.Namespace, base_tmp: Path) -> dict[str, obj
     env = {k: v for k, v in os.environ.items() if k in ("PATH", "LANG", "LC_ALL", "MUJOCO_GL", "PYOPENGL_PLATFORM",
                                                         "CAPX_ROBOSUITE_PY", "CAPX_LIBERO_PY", "LIBERO_CONFIG_PATH",
                                                         "NVIDIA_VISIBLE_DEVICES", "CUDA_VISIBLE_DEVICES")}
+    env["NUMBA_CACHE_DIR"] = str(tdir / "numba-cache")
     env.update(HOME=str(tdir), TMPDIR=str(tdir), XDG_CACHE_HOME=str(tdir / ".cache"))
     cmd = [sys.executable, "-m", "capx_agent.trial", "--trial-id", str(i), "--sim", args.sim,
            "--steps", str(args.steps), "--endpoint", "" if args.no_server else f"http://127.0.0.1:{args.port}"]

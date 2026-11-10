@@ -6,6 +6,7 @@ import os
 import time
 
 os.environ.setdefault("MUJOCO_GL", "egl")
+os.environ.setdefault("NUMBA_CACHE_DIR", os.path.join(os.environ.get("TMPDIR", "/tmp"), "numba-cache"))
 os.environ.setdefault("PYOPENGL_PLATFORM", "egl")
 import numpy as np  # noqa: E402
 from libero.libero import benchmark, get_libero_path  # noqa: E402

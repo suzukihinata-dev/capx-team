@@ -5,8 +5,8 @@
 1. `env/` を変える PR（`versions.submission.env`、`base.def`、`requirements/*.in` など）。
    - Python の依存を変えたらロックを作り直す:
      ```bash
-     uv pip compile --python-version 3.12 --generate-hashes env/requirements/robosuite.in -o env/requirements/robosuite.txt
-     uv pip compile --python-version 3.10 --generate-hashes env/requirements/libero.in    -o env/requirements/libero.txt
+     uv pip compile --python-version 3.12 --python-platform x86_64-manylinux_2_28 --generate-hashes env/requirements/robosuite.in -o env/requirements/robosuite.txt
+     uv pip compile --python-version 3.10 --python-platform x86_64-manylinux_2_28 --generate-hashes --emit-index-url --index-strategy unsafe-best-match env/requirements/libero.in -o env/requirements/libero.txt
      ```
    - `env/jobs/` を変えたら `JOB_PROTOCOL_VERSION` を上げ、自動化用の固定スクリプトも同じ日に更新する。
 2. マージ後、そのコミットでビルド: `bash env/jobs/build_base.sh --commit <sha> --tag base-YYYYMMDD.N`

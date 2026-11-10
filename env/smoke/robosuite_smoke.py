@@ -6,6 +6,7 @@ import os
 import time
 
 os.environ.setdefault("MUJOCO_GL", "egl")
+os.environ.setdefault("NUMBA_CACHE_DIR", os.path.join(os.environ.get("TMPDIR", "/tmp"), "numba-cache"))
 import numpy as np  # noqa: E402
 import robosuite as suite  # noqa: E402
 

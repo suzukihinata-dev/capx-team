@@ -1,0 +1,4 @@
+# test_array.sh 用のテスト一覧（1 行 1 テスト: 名前<TAB>smoke_test.sh への追加引数）
+robosuite-4x2	--sim robosuite --trials 4 --parallel 2
+libero-2x2	--sim libero --trials 2 --parallel 2
+noserver-8x4	--sim none --trials 8 --parallel 4 --no-server
